@@ -54,7 +54,7 @@ def read_root():
 
 @app.get("/catalog")
 def get_catalog(db: Session = Depends(get_sqlite_db)):
-    furniture = db.query(models.FurnitureItem).all()
+    furniture = db.query(models.Furniture).all()
     
     # We must ensure image_url and model_url are absolute URLs pointing to Render, not localhost!
     # Render sets the HOST header, so we can construct it dynamically, OR hardcode the render domain.
