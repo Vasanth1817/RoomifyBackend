@@ -52,21 +52,11 @@ class FurnitureResponse(FurnitureBase):
 def read_root():
     return {"message": "Welcome to the Roomify API"}
 
-@app.get("/catalog")
-def get_catalog(db: Session = Depends(get_sqlite_db)):
-    furniture = db.query(models.Furniture).all()
-    
-    # We must ensure image_url and model_url are absolute URLs pointing to Render, not localhost!
-    # Render sets the HOST header, so we can construct it dynamically, OR hardcode the render domain.
-    base_url = "https://roomifybackend.onrender.com"
-    
-    for item in furniture:
-        if getattr(item, "thumbnail_url", None) and item.thumbnail_url.startswith("/"):
-            item.thumbnail_url = f"{base_url}{item.thumbnail_url}"
-        if getattr(item, "model_url", None) and item.model_url.startswith("/"):
-            item.model_url = f"{base_url}{item.model_url}"
-            
-    return {"items": furniture}
+@app.get("/furniture", response_model=List[FurnitureResponse])
+def get_furniture(db: Session = Depends(get_sqlite_db)):
+    """Fetch all furniture items from the database."""
+    items = db.query(models.Furniture).all()
+    return items
 
 @app.post("/furniture", response_model=FurnitureResponse)
 def add_furniture(furniture: FurnitureCreate, db: Session = Depends(get_sqlite_db)):
