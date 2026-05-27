@@ -61,9 +61,9 @@ def get_catalog(db: Session = Depends(get_sqlite_db)):
     base_url = "https://roomifybackend.onrender.com"
     
     for item in furniture:
-        if item.image_url and item.image_url.startswith("/"):
-            item.image_url = f"{base_url}{item.image_url}"
-        if item.model_url and item.model_url.startswith("/"):
+        if getattr(item, "thumbnail_url", None) and item.thumbnail_url.startswith("/"):
+            item.thumbnail_url = f"{base_url}{item.thumbnail_url}"
+        if getattr(item, "model_url", None) and item.model_url.startswith("/"):
             item.model_url = f"{base_url}{item.model_url}"
             
     return {"items": furniture}
