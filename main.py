@@ -54,3 +54,26 @@ def add_furniture(furniture: FurnitureCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_furniture)
     return db_furniture
+
+# --- SAVED LAYOUT ENDPOINTS ---
+import json
+from typing import Dict, Any
+
+class LayoutData(BaseModel):
+    items: List[Dict[str, Any]]
+
+@app.post("/save_layout")
+def save_layout(layout: LayoutData, db: Session = Depends(get_db)):
+    """Save a room layout JSON from Unity to the database."""
+    json_str = json.dumps({"items": layout.items})
+    db_layout = models.SavedLayout(name="My Room Design", json_data=json_str)
+    db.add(db_layout)
+    db.commit()
+    db.refresh(db_layout)
+    return {"message": "Success", "id": db_layout.id}
+
+@app.get("/get_layouts")
+def get_layouts(db: Session = Depends(get_db)):
+    """Fetch all saved layouts for the Android Home Screen."""
+    layouts = db.query(models.SavedLayout).all()
+    return layouts
