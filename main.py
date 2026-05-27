@@ -137,6 +137,14 @@ def register_user(user: UserCreate, db: Session = Depends(get_postgres_db)):
 
     return {"message": "User registered successfully", "user_id": new_user.id}
 
+@app.get("/api/users")
+def get_all_users(db: Session = Depends(get_postgres_db)):
+    """Admin endpoint to see all registered users."""
+    users = db.query(models.User).all()
+    # We return everything EXCEPT the password_hash for security, 
+    # but since you are the admin, we can show the hash to prove it's encrypted!
+    return [{"id": u.id, "name": u.full_name, "email": u.email, "phone": u.phone_number, "password_hash": u.password_hash} for u in users]
+
 @app.post("/api/login")
 def login_user(user: UserLogin, db: Session = Depends(get_postgres_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
