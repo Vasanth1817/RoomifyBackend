@@ -69,25 +69,29 @@ def add_furniture(furniture: FurnitureCreate, db: Session = Depends(get_sqlite_d
 
 # --- SAVED LAYOUT ENDPOINTS ---
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 class LayoutData(BaseModel):
     items: List[Dict[str, Any]]
+    user_id: Optional[str] = None
 
 @app.post("/save_layout")
 def save_layout(layout: LayoutData, db: Session = Depends(get_postgres_db)):
     """Save a room layout JSON from Unity to the database."""
     json_str = json.dumps({"items": layout.items})
-    db_layout = models.SavedLayout(name="My Room Design", json_data=json_str)
+    db_layout = models.SavedLayout(name="My Room Design", json_data=json_str, user_id=layout.user_id)
     db.add(db_layout)
     db.commit()
     db.refresh(db_layout)
     return {"message": "Success", "id": db_layout.id}
 
 @app.get("/get_layouts")
-def get_layouts(db: Session = Depends(get_postgres_db)):
-    """Fetch all saved layouts for the Android Home Screen."""
-    layouts = db.query(models.SavedLayout).all()
+def get_layouts(user_id: Optional[str] = None, db: Session = Depends(get_postgres_db)):
+    """Fetch saved layouts for the given user (or all if not provided)."""
+    if user_id:
+        layouts = db.query(models.SavedLayout).filter(models.SavedLayout.user_id == user_id).all()
+    else:
+        layouts = db.query(models.SavedLayout).all()
     return layouts
 
 # --- USER AUTHENTICATION ENDPOINTS ---
