@@ -89,3 +89,64 @@ def get_layouts(db: Session = Depends(get_postgres_db)):
     """Fetch all saved layouts for the Android Home Screen."""
     layouts = db.query(models.SavedLayout).all()
     return layouts
+
+# --- USER AUTHENTICATION ENDPOINTS ---
+import hashlib
+
+class UserCreate(BaseModel):
+    full_name: str
+    phone_number: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+def hash_password(password: str) -> str:
+    # A simple SHA-256 hash for demonstration (use bcrypt in deep production!)
+    return hashlib.sha256(password.encode()).hexdigest()
+
+@app.post("/api/register")
+def register_user(user: UserCreate, db: Session = Depends(get_postgres_db)):
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing_user:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create new user
+    new_user = models.User(
+        full_name=user.full_name,
+        phone_number=user.phone_number,
+        email=user.email,
+        password_hash=hash_password(user.password)
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Create default settings for user
+    default_settings = models.UserSettings(user_id=new_user.id)
+    db.add(default_settings)
+    db.commit()
+
+    return {"message": "User registered successfully", "user_id": new_user.id}
+
+@app.post("/api/login")
+def login_user(user: UserLogin, db: Session = Depends(get_postgres_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if not db_user:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if db_user.password_hash != hash_password(user.password):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+    return {
+        "message": "Login successful",
+        "user_id": db_user.id,
+        "full_name": db_user.full_name,
+        "email": db_user.email
+    }
