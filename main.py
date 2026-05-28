@@ -131,11 +131,33 @@ def register_user(user: UserCreate, db: Session = Depends(get_postgres_db)):
     db.refresh(new_user)
 
     # Create default settings for user
-    default_settings = models.UserSettings(user_id=new_user.id)
+    default_settings = models.UserSettings(user_id=new_user.id, max_budget=0.0)
     db.add(default_settings)
     db.commit()
 
     return {"message": "User registered successfully", "user_id": new_user.id}
+
+class BudgetUpdate(BaseModel):
+    user_id: str
+    max_budget: float
+
+@app.post("/api/budget")
+def update_budget(budget_data: BudgetUpdate, db: Session = Depends(get_postgres_db)):
+    settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == budget_data.user_id).first()
+    if not settings:
+        settings = models.UserSettings(user_id=budget_data.user_id, max_budget=budget_data.max_budget)
+        db.add(settings)
+    else:
+        settings.max_budget = budget_data.max_budget
+    db.commit()
+    return {"message": "Budget updated successfully", "max_budget": settings.max_budget}
+
+@app.get("/api/budget")
+def get_budget(user_id: str, db: Session = Depends(get_postgres_db)):
+    settings = db.query(models.UserSettings).filter(models.UserSettings.user_id == user_id).first()
+    if not settings:
+        return {"max_budget": 0.0}
+    return {"max_budget": settings.max_budget}
 
 @app.get("/api/users")
 def get_all_users(db: Session = Depends(get_postgres_db)):
