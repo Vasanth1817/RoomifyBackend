@@ -162,3 +162,15 @@ def login_user(user: UserLogin, db: Session = Depends(get_postgres_db)):
         "full_name": db_user.full_name,
         "email": db_user.email
     }
+
+from sqlalchemy import text
+
+@app.get("/api/migrate")
+def migrate_db(db: Session = Depends(get_postgres_db)):
+    """Run raw SQL to add missing user_id column since create_all doesn't alter tables."""
+    try:
+        db.execute(text("ALTER TABLE saved_layouts ADD COLUMN user_id VARCHAR;"))
+        db.commit()
+        return {"status": "Migration successful!"}
+    except Exception as e:
+        return {"status": "Migration failed or already applied", "error": str(e)}
