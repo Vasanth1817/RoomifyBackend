@@ -94,6 +94,17 @@ def get_layouts(user_id: Optional[str] = None, db: Session = Depends(get_postgre
         layouts = db.query(models.SavedLayout).all()
     return layouts
 
+@app.delete("/delete_layout/{layout_id}")
+def delete_layout(layout_id: int, db: Session = Depends(get_postgres_db)):
+    """Delete a saved layout by its ID."""
+    db_layout = db.query(models.SavedLayout).filter(models.SavedLayout.id == layout_id).first()
+    if not db_layout:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Layout not found")
+    db.delete(db_layout)
+    db.commit()
+    return {"message": "Layout deleted successfully"}
+
 # --- USER AUTHENTICATION ENDPOINTS ---
 import hashlib
 
