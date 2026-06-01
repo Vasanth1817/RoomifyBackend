@@ -37,4 +37,5 @@ class SavedLayout(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=True) # nullable for backwards compatibility
     name = Column(String, index=True, default="My Room Design")
+    mode = Column(String, default="AR")
     json_data = Column(String) # Stores the raw JSON payload from Unity

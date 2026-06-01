@@ -10,6 +10,10 @@ from database import SessionLocal, PostgresSessionLocal, engine_sqlite, engine_p
 models.Base.metadata.create_all(bind=engine_sqlite)
 try:
     models.Base.metadata.create_all(bind=engine_postgres)
+    from sqlalchemy import text
+    with engine_postgres.connect() as conn:
+        conn.execute(text("ALTER TABLE saved_layouts ADD COLUMN IF NOT EXISTS mode VARCHAR DEFAULT 'AR';"))
+        conn.commit()
 except Exception as e:
     print(f"Skipping Postgres init locally: {e}")
 
@@ -74,12 +78,14 @@ from typing import Dict, Any, Optional
 class LayoutData(BaseModel):
     items: List[Dict[str, Any]]
     user_id: Optional[str] = None
+    room_name: Optional[str] = "My Room Design"
+    mode: Optional[str] = "AR"
 
 @app.post("/save_layout")
 def save_layout(layout: LayoutData, db: Session = Depends(get_postgres_db)):
     """Save a room layout JSON from Unity to the database."""
     json_str = json.dumps({"items": layout.items})
-    db_layout = models.SavedLayout(name="My Room Design", json_data=json_str, user_id=layout.user_id)
+    db_layout = models.SavedLayout(name=layout.room_name, mode=layout.mode, json_data=json_str, user_id=layout.user_id)
     db.add(db_layout)
     db.commit()
     db.refresh(db_layout)
