@@ -80,12 +80,21 @@ class LayoutData(BaseModel):
     user_id: Optional[str] = None
     room_name: Optional[str] = "My Room Design"
     mode: Optional[str] = "AR"
+    before_image: Optional[str] = None
+    after_image: Optional[str] = None
 
 @app.post("/save_layout")
 def save_layout(layout: LayoutData, db: Session = Depends(get_postgres_db)):
     """Save a room layout JSON from Unity to the database."""
     json_str = json.dumps({"items": layout.items})
-    db_layout = models.SavedLayout(name=layout.room_name, mode=layout.mode, json_data=json_str, user_id=layout.user_id)
+    db_layout = models.SavedLayout(
+        name=layout.room_name, 
+        mode=layout.mode, 
+        json_data=json_str, 
+        user_id=layout.user_id,
+        before_image=layout.before_image,
+        after_image=layout.after_image
+    )
     db.add(db_layout)
     db.commit()
     db.refresh(db_layout)
@@ -206,9 +215,11 @@ from sqlalchemy import text
 
 @app.get("/api/migrate")
 def migrate_db(db: Session = Depends(get_postgres_db)):
-    """Run raw SQL to add missing user_id column since create_all doesn't alter tables."""
+    """Run raw SQL to add missing columns since create_all doesn't alter tables."""
     try:
-        db.execute(text("ALTER TABLE saved_layouts ADD COLUMN user_id VARCHAR;"))
+        db.execute(text("ALTER TABLE saved_layouts ADD COLUMN IF NOT EXISTS user_id VARCHAR;"))
+        db.execute(text("ALTER TABLE saved_layouts ADD COLUMN IF NOT EXISTS before_image TEXT;"))
+        db.execute(text("ALTER TABLE saved_layouts ADD COLUMN IF NOT EXISTS after_image TEXT;"))
         db.commit()
         return {"status": "Migration successful!"}
     except Exception as e:

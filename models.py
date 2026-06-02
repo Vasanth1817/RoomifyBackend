@@ -39,3 +39,5 @@ class SavedLayout(Base):
     name = Column(String, index=True, default="My Room Design")
     mode = Column(String, default="AR")
     json_data = Column(String) # Stores the raw JSON payload from Unity
+    before_image = Column(String, nullable=True) # Base64 encoded screenshot when AR session starts
+    after_image = Column(String, nullable=True) # Base64 encoded screenshot when saving
