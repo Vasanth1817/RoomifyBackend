@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -18,6 +19,15 @@ except Exception as e:
     print(f"Skipping Postgres init locally: {e}")
 
 app = FastAPI(title="Roomify Backend API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    max_age=600,
+)
 
 # Dependency for SQLite
 def get_sqlite_db():
